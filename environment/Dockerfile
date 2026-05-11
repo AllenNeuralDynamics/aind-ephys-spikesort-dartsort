@@ -1,31 +1,18 @@
-# TODO: choose an appropriate base image.
-#
-# Option A — use an existing CodeOcean base image that already bundles your sorter:
-#   e.g. codeocean/kilosort4-base:4.0.30_cuda-12.0.0  (GPU sorters)
-#
-# Option B — start from a plain Python image and install everything via pip:
-#   e.g. codeocean/mambaforge3:24.5.0-0-python3.12.4-ubuntu22.04
-#
-# See https://hub.docker.com/u/codeocean for available images.
-
+# hash:sha256:ce6cdd442a1155a4bb8cc49458de3e0d7f71fab5193bdb93930ebcdfd5301209
 ARG REGISTRY_HOST
-# TODO: replace with the actual base image
-FROM $REGISTRY_HOST/codeocean/mambaforge3:24.5.0-0-python3.12.4-ubuntu22.04
+FROM $REGISTRY_HOST/codeocean/pytorch:2.4.0-cuda12.4.0-mambaforge24.5.0-0-python3.12.4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
-COPY git-askpass /
+COPY git-ask-pass /
 
-# TODO: add or remove system packages as needed
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        build-essential=12.9ubuntu3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# TODO: pin the exact package versions required by your sorter
 RUN pip install -U --no-cache-dir \
     aind-data-schema==2.4.0 \
-    aind-log-utils==0.2.3 \
-    spikeinterface[full]==0.103.0
-# TODO: add your sorter's pip package here, e.g.:
-#   my-sorter-package==x.y.z
+    aind-log-utils==0.2.7 \
+    cupy-cuda12x==14.0.1 \
+    scipy==1.17.1 \
+    spikeinterface[full]==0.104.3
+
+COPY postInstall /
+RUN --mount=type=secret,id=secrets . /run/secrets/secrets \
+    && /postInstall

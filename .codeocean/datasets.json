@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"attached_datasets": [
+		{
+			"id": "5a9645ce-70ef-4a9b-a81d-42d28a50a5c3",
+			"mount": "preprocessing_pipeline_output_test"
+		}
+	]
+}

@@ -4,5 +4,7 @@
         "progress_bar": false
     },
     "sorter": {
+        "nn_denoiser_class_name": "Decollider",
+        "nn_denoiser_pretrained_path": null
     }
 }

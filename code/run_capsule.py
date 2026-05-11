@@ -18,9 +18,11 @@ from datetime import datetime, timedelta
 
 # SPIKEINTERFACE
 import spikeinterface as si
-import spikeinterface.extractors as se
+import spikeinterface.preprocessing as spre
 import spikeinterface.sorters as ss
 import spikeinterface.curation as sc
+
+from dartsort import dartsort, DARTsortUserConfig
 
 # AIND
 from aind_data_schema.core.processing import DataProcess, ProcessStage
@@ -34,13 +36,13 @@ except ImportError:
     HAVE_AIND_LOG_UTILS = False
 
 # TODO: update with the actual URL and version of the capsule
-URL = "https://github.com/YourOrganization/Your-SORTER_NAME-repository"
+URL = "https://github.com/cwindolf/dartsort"
 VERSION = "1.0"
 
 # TODO: replace with the actual sorter name
-SORTER_NAME = "SORTER_NAME"
-MOTION_CORRECTION_SUPPORTED = False  # set to True if the sorter supports motion correction
-MOTION_CORRECTION_PARAM_NAME = "apply_motion_correction"  # set to the actual parameter name used by the sorter to enable/disable motion correction
+SORTER_NAME = "DARTSort"
+MOTION_CORRECTION_SUPPORTED = True  # set to True if the sorter supports motion correction
+MOTION_CORRECTION_PARAM_NAME = "do_motion_estimation"  # set to the actual parameter name used by the sorter to enable/disable motion correction
 
 data_folder = Path("../data")
 results_folder = Path("../results")
@@ -215,22 +217,11 @@ if __name__ == "__main__":
 
         # run sorter
         try:
-            # TODO: update with the actual sorter function and parameters (if not integrated into spikeinterface)
-            # SPIKEINTERFACE-integrated sorters
-            # sorting = ss.run_sorter(
-            #     SORTER_NAME,
-            #     recording,
-            #     folder=spikesorted_raw_output_folder / recording_name,
-            #     verbose=False,
-            #     delete_output_folder=False,
-            #     remove_existing_folder=True,
-            #     **sorter_params,
-            # )
-
-            # OR non-integrated sorters
-
-            # sorting = my_sorter_package.run(recording, params)
-            
+            cfg = DARTsortUserConfig(**sorter_params)
+            recording_zscore = spre.zscore(recording)
+            logging.info(f"DartSort CFG:\n{cfg}")
+            sorting_dartsort = dartsort(recording_zscore, output_dir=scratch_folder / "dartsort", cfg=cfg)
+            sorting = sorting_dartsort.to_numpy_sorting()
             
             logging.info(f"\tRaw sorting output: {sorting}")
             n_original_units = int(len(sorting.unit_ids))
@@ -263,9 +254,10 @@ if __name__ == "__main__":
             # save results
             logging.info(f"\tSaving results to {sorting_output_folder}")
             sorting = sorting.save(folder=sorting_output_folder)
-            shutil.copy(
-                spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
-            )
+            if (spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json").is_file():
+                shutil.copy(
+                    spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
+                )
         except Exception as e:
             log_file = spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json"
             with open(log_file, "r") as f:

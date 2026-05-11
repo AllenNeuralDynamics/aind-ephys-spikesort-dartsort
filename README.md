@@ -1,4 +1,4 @@
-# aind-ephys-spikesort-template
+# aind-ephys-spikesort-dartsort
 
 Template repository to build a custom spike sorting capsule for the AIND ephys pipeline.
 
