@@ -1,0 +1,49 @@
+{
+	"version": 1,
+	"parameters": [
+		{
+			"id": "hPk7NZ0dzx4kOtqE",
+			"name": "raise if fails",
+			"description": "Whether to raise an error in case of failure or continue. true means raise",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "true",
+			"extra_data": [
+				"false",
+				"true"
+			]
+		},
+		{
+			"id": "0NTngYl3CaUVYOfP",
+			"name": "skip motion correction",
+			"description": "Whether to skip DartSort motion correction.",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "false",
+			"extra_data": [
+				"false",
+				"true"
+			]
+		},
+		{
+			"id": "NTh3ZptBHdQzRu8V",
+			"name": "min channels for drift",
+			"description": "Minimum number of channels to enable DartSort motion correction",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "64"
+		},
+		{
+			"id": "dA1ZlhYug07V1VGM",
+			"name": "use preprocessing motion",
+			"description": "Whether to use the existing motion from pre-processing",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "true",
+			"extra_data": [
+				"true",
+				"false"
+			]
+		}
+	]
+}

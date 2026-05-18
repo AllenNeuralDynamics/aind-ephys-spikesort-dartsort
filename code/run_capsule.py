@@ -21,8 +21,10 @@ import spikeinterface as si
 import spikeinterface.preprocessing as spre
 import spikeinterface.sorters as ss
 import spikeinterface.curation as sc
+from spikeinterface.sortingcomponents.motion import InterpolateMotionRecording
 
 from dartsort import dartsort, DARTsortUserConfig
+from pydantic import TypeAdapter
 
 # AIND
 from aind_data_schema.core.processing import DataProcess, ProcessStage
@@ -66,6 +68,11 @@ min_drift_channels_help = f"Minimum number of channels to enable {SORTER_NAME} m
 min_drift_channels_group.add_argument("static_min_channels_for_drift", nargs="?", help=min_drift_channels_help)
 min_drift_channels_group.add_argument("--min-drift-channels", default="64", help=min_drift_channels_help)
 
+use_preprocessing_motion_group = parser.add_mutually_exclusive_group()
+use_preprocessing_motion_help = f"Whether to use motion from preprocessing. Default: True"
+use_preprocessing_motion_group.add_argument("--do-not-use-preprocessing-motion", action="store_true", help=use_preprocessing_motion_help)
+use_preprocessing_motion_group.add_argument("static_use_preprocessing_motion", nargs="?", help=use_preprocessing_motion_help)
+
 n_jobs_group = parser.add_mutually_exclusive_group()
 n_jobs_help = (
     "Number of jobs to use for parallel processing. Default is -1 (all available cores). "
@@ -95,11 +102,13 @@ if __name__ == "__main__":
         SKIP_MOTION_CORRECTION = spikesorting_params.pop("skip_motion_correction", False)
         MIN_DRIFT_CHANNELS = spikesorting_params.pop("min_drift_channels", 64)
         RAISE_IF_FAILS = spikesorting_params.pop("raise_if_fails", True)
+        USE_PREPROCESSING_MOTION = spikesorting_params.pop("use_preprocessing_motion", True)
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
         MIN_DRIFT_CHANNELS = args.static_min_channels_for_drift or args.min_drift_channels
         MIN_DRIFT_CHANNELS = int(MIN_DRIFT_CHANNELS)
         RAISE_IF_FAILS = True if args.static_raise_if_fails and args.static_raise_if_fails.lower() == "true" else args.raise_if_fails
+        USE_PREPROCESSING_MOTION = True if args.static_use_preprocessing_motion and args.static_use_preprocessing_motion.lower() == "true" else not args.do_not_use_preprocessing_motion
 
         # read default parameters from JSON file
         default_params_file = Path(__file__).parent / "params.json"
@@ -150,6 +159,7 @@ if __name__ == "__main__":
     logging.info(f"\tRAISE_IF_FAILS: {RAISE_IF_FAILS}")
     logging.info(f"\tSKIP_MOTION_CORRECTION: {SKIP_MOTION_CORRECTION}")
     logging.info(f"\tMIN_DRIFT_CHANNELS: {MIN_DRIFT_CHANNELS}")
+    logging.info(f"\tUSE_PREPROCESSING_MOTION: {USE_PREPROCESSING_MOTION}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
     sorting_params = None
@@ -206,6 +216,7 @@ if __name__ == "__main__":
             recording = si.concatenate_recordings([recording])
             split_segments = True
 
+        si_motion = None
         if MOTION_CORRECTION_SUPPORTED:
             if recording.get_num_channels() < MIN_DRIFT_CHANNELS:
                 logging.info("Drift correction not enabled due to low number of channels")
@@ -215,12 +226,26 @@ if __name__ == "__main__":
                 logging.info("Drift correction disabled")
                 sorter_params[MOTION_CORRECTION_PARAM_NAME] = False
 
+            if not SKIP_MOTION_CORRECTION and USE_PREPROCESSING_MOTION:
+                motion_folder = preprocessed_folder / f"motion_{recording_name}"
+                logging.info(motion_folder.is_dir())
+                if motion_folder.is_dir():
+                    motion_info = spre.load_motion_info(motion_folder)
+                    si_motion = motion_info["motion"]
+                    logging.info(f"Using SI motion: {si_motion}")
+
+                    # If motion correction was applied, retrieve pre-interpolation recording.
+                    # This is done since DartSort makes use of motion without interpolating the traces
+                    if isinstance(recording, InterpolateMotionRecording):
+                        logging.info("Undoing motion interpolation!")
+                        recording = recording.get_parent()
+
         # run sorter
         try:
             cfg = DARTsortUserConfig(**sorter_params)
-            recording_zscore = spre.zscore(recording)
-            logging.info(f"DartSort CFG:\n{cfg}")
-            sorting_dartsort = dartsort(recording_zscore, output_dir=scratch_folder / "dartsort", cfg=cfg)
+            cfg_dict = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
+            logging.info(f"DartSort CFG:\n{cfg_dict}")
+            sorting_dartsort = dartsort(recording, output_dir=scratch_folder / "dartsort", cfg=cfg, si_motion=si_motion)
             sorting = sorting_dartsort.to_numpy_sorting()
             
             logging.info(f"\tRaw sorting output: {sorting}")
