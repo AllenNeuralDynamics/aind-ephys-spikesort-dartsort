@@ -245,8 +245,8 @@ if __name__ == "__main__":
             cfg = DARTsortUserConfig(**sorter_params)
             cfg_dict = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
             logging.info(f"DartSort CFG:\n{cfg_dict}")
-            sorting_dartsort = dartsort(recording, output_dir=scratch_folder / "dartsort", cfg=cfg, si_motion=si_motion)
-            sorting = sorting_dartsort.to_numpy_sorting()
+            results_dartsort = dartsort(recording, output_dir=scratch_folder / "dartsort", cfg=cfg, si_motion=si_motion)
+            sorting = results_dartsort["sorting"].to_numpy_sorting()
             
             logging.info(f"\tRaw sorting output: {sorting}")
             n_original_units = int(len(sorting.unit_ids))
@@ -284,11 +284,13 @@ if __name__ == "__main__":
                     spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
                 )
         except Exception as e:
+            logging.info("\n\tSPIKE SORTING FAILED!")
             log_file = spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json"
-            with open(log_file, "r") as f:
-                spike_sorter_log = json.load(f)
-            logging.info("\n\tSPIKE SORTING FAILED!\nError log:\n")
-            pprint(spike_sorter_log)
+            if log_file.is_file():
+                with open(log_file, "r") as f:
+                    spike_sorter_log = json.load(f)
+                logging.info("Error log:\n")
+                pprint(spike_sorter_log)
             if RAISE_IF_FAILS:
                 raise Exception(e)
             else:
