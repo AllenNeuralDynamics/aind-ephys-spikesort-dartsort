@@ -243,8 +243,8 @@ if __name__ == "__main__":
         # run sorter
         try:
             cfg = DARTsortUserConfig(**sorter_params)
-            cfg_dict = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
-            logging.info(f"DartSort CFG:\n{cfg_dict}")
+            dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
+            logging.info(f"DartSort CFG:\n{dartsort_params}")
             results_dartsort = dartsort(recording, output_dir=scratch_folder / "dartsort", cfg=cfg, si_motion=si_motion)
             sorting = results_dartsort["sorting"].to_numpy_sorting()
             
@@ -252,7 +252,7 @@ if __name__ == "__main__":
             n_original_units = int(len(sorting.unit_ids))
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
             if sorting_params is None:
-                sorting_params = sorting.sorting_info["params"]
+                sorting_params = dartsort_params
 
             # safe delete the output folder
             try:
