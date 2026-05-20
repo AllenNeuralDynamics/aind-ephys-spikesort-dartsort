@@ -245,7 +245,8 @@ if __name__ == "__main__":
             cfg = DARTsortUserConfig(**sorter_params)
             dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
             logging.info(f"DartSort CFG:\n{dartsort_params}")
-            results_dartsort = dartsort(recording, output_dir=scratch_folder / "dartsort", cfg=cfg, si_motion=si_motion)
+            spikesorted_raw_output_folder.mkdir(exist_ok=True)
+            results_dartsort = dartsort(recording, output_dir=spikesorted_raw_output_folder / recording_name, cfg=cfg, si_motion=si_motion)
             sorting = results_dartsort["sorting"].to_numpy_sorting()
             
             logging.info(f"\tRaw sorting output: {sorting}")
@@ -256,7 +257,7 @@ if __name__ == "__main__":
 
             # safe delete the output folder
             try:
-                shutil.rmtree(spikesorted_raw_output_folder / recording_name / "sorter_output")
+                shutil.rmtree(spikesorted_raw_output_folder / recording_name)
             except Exception as e:
                 logging.info(f"\tError deleting sorter output folder: {e}")
 
