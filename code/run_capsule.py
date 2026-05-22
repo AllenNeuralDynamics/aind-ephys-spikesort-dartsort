@@ -242,7 +242,6 @@ if __name__ == "__main__":
                         recording = recording.get_parent()
 
         sorter_params["n_jobs_small"] = N_JOBS - 2
-        sorter_params["n_jobs_gpu"] = 4
 
         # run sorter
         try:
