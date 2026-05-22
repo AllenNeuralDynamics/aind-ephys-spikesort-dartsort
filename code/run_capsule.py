@@ -24,6 +24,7 @@ import spikeinterface.curation as sc
 from spikeinterface.sortingcomponents.motion import InterpolateMotionRecording
 
 from dartsort import dartsort, DARTsortUserConfig
+from dartsort import __version__ as dartsort_version
 from pydantic import TypeAdapter
 
 # AIND
@@ -240,26 +241,34 @@ if __name__ == "__main__":
                         logging.info("Undoing motion interpolation!")
                         recording = recording.get_parent()
 
+        sorter_params["n_jobs_small"] = N_JOBS - 2
+        sorter_params["n_jobs_gpu"] = 4
+
         # run sorter
         try:
             cfg = DARTsortUserConfig(**sorter_params)
             dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
             logging.info(f"DartSort CFG:\n{dartsort_params}")
             spikesorted_raw_output_folder.mkdir(exist_ok=True)
+            t_start_dartsort = time.perf_counter()
             results_dartsort = dartsort(recording, output_dir=spikesorted_raw_output_folder / recording_name, cfg=cfg, si_motion=si_motion)
             sorting = results_dartsort["sorting"].to_numpy_sorting()
+            t_stop_dartsort = time.perf_counter()
+
+            # Save spikeinterface log
+            log = dict(
+                sorter_name="dartsort",
+                sorter_version=dartsort_version,
+                run_time=t_stop_dartsort - t_start_dartsort
+            )
+            with open(spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", "w") as f:
+                json.dump(log, f)
             
             logging.info(f"\tRaw sorting output: {sorting}")
             n_original_units = int(len(sorting.unit_ids))
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
             if sorting_params is None:
                 sorting_params = dartsort_params
-
-            # safe delete the output folder
-            try:
-                shutil.rmtree(spikesorted_raw_output_folder / recording_name)
-            except Exception as e:
-                logging.info(f"\tError deleting sorter output folder: {e}")
 
             # remove empty units
             sorting = sorting.remove_empty_units()
@@ -284,6 +293,11 @@ if __name__ == "__main__":
                 shutil.copy(
                     spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
                 )
+            # safe delete the output folder
+            try:
+                shutil.rmtree(spikesorted_raw_output_folder / recording_name)
+            except Exception as e:
+                logging.info(f"\tError deleting sorter output folder: {e}")
         except Exception as e:
             logging.info("\n\tSPIKE SORTING FAILED!")
             log_file = spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json"
