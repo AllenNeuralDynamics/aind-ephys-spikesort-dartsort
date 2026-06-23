@@ -23,7 +23,7 @@ import spikeinterface.sorters as ss
 import spikeinterface.curation as sc
 from spikeinterface.sortingcomponents.motion import InterpolateMotionRecording
 
-from dartsort import dartsort, DARTsortUserConfig
+from dartsort import dartsort, DARTsortUserConfig, DeveloperConfig
 from dartsort import __version__ as dartsort_version
 from pydantic import TypeAdapter
 
@@ -74,6 +74,22 @@ use_preprocessing_motion_help = f"Whether to use motion from preprocessing. Defa
 use_preprocessing_motion_group.add_argument("--do-not-use-preprocessing-motion", action="store_true", help=use_preprocessing_motion_help)
 use_preprocessing_motion_group.add_argument("static_use_preprocessing_motion", nargs="?", help=use_preprocessing_motion_help)
 
+matching_threshold_group = parser.add_mutually_exclusive_group()
+matching_threshold_group.add_argument("--matching-threshold", default="8", help="")
+matching_threshold_group.add_argument("static_matching_threshold", nargs="?", help="")
+
+initial_threshold_group = parser.add_mutually_exclusive_group()
+initial_threshold_group.add_argument("--initial-threshold", default="9", help="")
+initial_threshold_group.add_argument("static_initial_threshold", nargs="?", help="")
+
+whiten_temporal_length_group = parser.add_mutually_exclusive_group()
+whiten_temporal_length_group.add_argument("--whiten-temporal-length", default="3", help="")
+whiten_temporal_length_group.add_argument("static_whiten_temporal_length", nargs="?", help="")
+
+si_merge_preset_group = parser.add_mutually_exclusive_group()
+si_merge_preset_group.add_argument("--si-merge-preset", default="dartsort_slay_xc_ccg", help="")
+si_merge_preset_group.add_argument("static_si_merge_preset", nargs="?", help="")
+
 n_jobs_group = parser.add_mutually_exclusive_group()
 n_jobs_help = (
     "Number of jobs to use for parallel processing. Default is -1 (all available cores). "
@@ -104,12 +120,23 @@ if __name__ == "__main__":
         MIN_DRIFT_CHANNELS = spikesorting_params.pop("min_drift_channels", 64)
         RAISE_IF_FAILS = spikesorting_params.pop("raise_if_fails", True)
         USE_PREPROCESSING_MOTION = spikesorting_params.pop("use_preprocessing_motion", True)
+        MATCHING_THRESHOLD = spikesorting_params.pop("matching_threshold", 8.)
+        INITIAL_THRESHOLD = spikesorting_params.pop("initial_threshold", 9.)
+        WHITEN_TEMPORAL_LENGTH = spikesorting_params.pop("whiten_temporal_length", 3)
+        SI_MERGE_PRESET = spikesorting_params.pop("si_merge_preset", "dartsort_slay_xc_ccg")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
         MIN_DRIFT_CHANNELS = args.static_min_channels_for_drift or args.min_drift_channels
         MIN_DRIFT_CHANNELS = int(MIN_DRIFT_CHANNELS)
         RAISE_IF_FAILS = True if args.static_raise_if_fails and args.static_raise_if_fails.lower() == "true" else args.raise_if_fails
         USE_PREPROCESSING_MOTION = True if args.static_use_preprocessing_motion and args.static_use_preprocessing_motion.lower() == "true" else not args.do_not_use_preprocessing_motion
+        MATCHING_THRESHOLD = args.static_matching_threshold or args.matching_threshold
+        MATCHING_THRESHOLD = float(MATCHING_THRESHOLD)
+        INITIAL_THRESHOLD = args.static_initial_threshold or args.initial_threshold
+        INITIAL_THRESHOLD = float(INITIAL_THRESHOLD)
+        WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
+        WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
+        SI_MERGE_PRESET = args.static_si_merge_preset or args.si_merge_preset
 
         # read default parameters from JSON file
         default_params_file = Path(__file__).parent / "params.json"
@@ -161,6 +188,10 @@ if __name__ == "__main__":
     logging.info(f"\tSKIP_MOTION_CORRECTION: {SKIP_MOTION_CORRECTION}")
     logging.info(f"\tMIN_DRIFT_CHANNELS: {MIN_DRIFT_CHANNELS}")
     logging.info(f"\tUSE_PREPROCESSING_MOTION: {USE_PREPROCESSING_MOTION}")
+    logging.info(f"\tMATCHING_THRESHOLD: {MATCHING_THRESHOLD}")
+    logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
+    logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
+    logging.info(f"\tSI_MERGE_PRESET: {SI_MERGE_PRESET}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
     sorting_params = None
@@ -229,7 +260,6 @@ if __name__ == "__main__":
 
             if not SKIP_MOTION_CORRECTION and USE_PREPROCESSING_MOTION:
                 motion_folder = preprocessed_folder / f"motion_{recording_name}"
-                logging.info(motion_folder.is_dir())
                 if motion_folder.is_dir():
                     motion_info = spre.load_motion_info(motion_folder)
                     si_motion = motion_info["motion"]
@@ -243,10 +273,18 @@ if __name__ == "__main__":
 
         sorter_params["n_jobs_small"] = N_JOBS - 2
 
+        sorter_params["matching_threshold"] = MATCHING_THRESHOLD
+        sorter_params["initial_threshold"] = INITIAL_THRESHOLD
+        sorter_params["whiten_temporal_length"] = WHITEN_TEMPORAL_LENGTH
+        sorter_params["spikeinterface_merge_preset"] = SI_MERGE_PRESET
+
         # run sorter
         try:
-            cfg = DARTsortUserConfig(**sorter_params)
-            dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
+            # cfg = DARTsortUserConfig(**sorter_params)
+            # dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
+            # Use Dev config to play around with params for now
+            cfg = DeveloperConfig(**sorter_params)
+            dartsort_params = TypeAdapter(DeveloperConfig).dump_python(cfg)
             logging.info(f"DartSort CFG:\n{dartsort_params}")
             spikesorted_raw_output_folder.mkdir(exist_ok=True)
             t_start_dartsort = time.perf_counter()

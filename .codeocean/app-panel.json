@@ -44,6 +44,34 @@
 				"true",
 				"false"
 			]
+		},
+		{
+			"id": "kXqcqp8ywRqTqoRE",
+			"name": "matching threshold",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "8"
+		},
+		{
+			"id": "h69VK6xLCyr0E59K",
+			"name": "initial threshold",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "9"
+		},
+		{
+			"id": "8CZK9HLwd8aQ9vxC",
+			"name": "whiten temporal length",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "3"
+		},
+		{
+			"id": "Yo42LjmtowA4q7Px",
+			"name": "spikeinterface merge preset",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "dartsort_slay_xc_ccg"
 		}
 	]
 }
