@@ -343,12 +343,15 @@ if __name__ == "__main__":
                     spike_sorter_log = json.load(f)
                 logging.info("Error log:\n")
                 pprint(spike_sorter_log)
+            else:
+                logging.info("No log found.")
             if RAISE_IF_FAILS:
                 raise Exception(e)
             else:
                 # save log to results
                 (sorting_output_folder).mkdir(parents=True, exist_ok=True)
-                shutil.copy(log_file, sorting_output_folder)
+                if log_file.is_file():
+                    shutil.copy(log_file, sorting_output_folder)
                 sorting_outputs = dict()
                 sorting_params = dict()
 
