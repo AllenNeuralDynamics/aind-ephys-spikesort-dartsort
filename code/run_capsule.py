@@ -47,6 +47,8 @@ SORTER_NAME = "DARTSort"
 MOTION_CORRECTION_SUPPORTED = True  # set to True if the sorter supports motion correction
 MOTION_CORRECTION_PARAM_NAME = "do_motion_estimation"  # set to the actual parameter name used by the sorter to enable/disable motion correction
 
+COPY_DARTSORT_OUTPUT_TO_RESULTS = True
+
 data_folder = Path("../data")
 results_folder = Path("../results")
 scratch_folder = Path("../scratch")
@@ -81,6 +83,10 @@ matching_threshold_group.add_argument("static_matching_threshold", nargs="?", he
 initial_threshold_group = parser.add_mutually_exclusive_group()
 initial_threshold_group.add_argument("--initial-threshold", default="9", help="")
 initial_threshold_group.add_argument("static_initial_threshold", nargs="?", help="")
+
+subsampling_presence_group = parser.add_mutually_exclusive_group()
+subsampling_presence_group.add_argument("--subsampling-presence", default="0.1", help="")
+subsampling_presence_group.add_argument("static_subsampling_presence", nargs="?", help="")
 
 whiten_temporal_length_group = parser.add_mutually_exclusive_group()
 whiten_temporal_length_group.add_argument("--whiten-temporal-length", default="3", help="")
@@ -122,6 +128,7 @@ if __name__ == "__main__":
         USE_PREPROCESSING_MOTION = spikesorting_params.pop("use_preprocessing_motion", True)
         MATCHING_THRESHOLD = spikesorting_params.pop("matching_threshold", 8.)
         INITIAL_THRESHOLD = spikesorting_params.pop("initial_threshold", 9.)
+        SUBSAMPLING_PRESENCE = spikesorting_params.pop("subsampling_presence", 0.1)
         WHITEN_TEMPORAL_LENGTH = spikesorting_params.pop("whiten_temporal_length", 3)
         SI_MERGE_PRESET = spikesorting_params.pop("si_merge_preset", "dartsort_slay_xc_ccg")
     else:
@@ -134,6 +141,8 @@ if __name__ == "__main__":
         MATCHING_THRESHOLD = float(MATCHING_THRESHOLD)
         INITIAL_THRESHOLD = args.static_initial_threshold or args.initial_threshold
         INITIAL_THRESHOLD = float(INITIAL_THRESHOLD)
+        SUBSAMPLING_PRESENCE = args.static_subsampling_presence or args.subsampling_presence
+        SUBSAMPLING_PRESENCE = float(SUBSAMPLING_PRESENCE)
         WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
         WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
         SI_MERGE_PRESET = args.static_si_merge_preset or args.si_merge_preset
@@ -190,9 +199,12 @@ if __name__ == "__main__":
     logging.info(f"\tUSE_PREPROCESSING_MOTION: {USE_PREPROCESSING_MOTION}")
     logging.info(f"\tMATCHING_THRESHOLD: {MATCHING_THRESHOLD}")
     logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
+    logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
     logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
     logging.info(f"\tSI_MERGE_PRESET: {SI_MERGE_PRESET}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
+
+    assert 0 < SUBSAMPLING_PRESENCE < 1, f"Subsampling presence must be between 0 and 1 (excluded): {SUBSAMPLING_PRESENCE} is invalid"
 
     sorting_params = None
 
@@ -275,6 +287,7 @@ if __name__ == "__main__":
 
         sorter_params["matching_threshold"] = MATCHING_THRESHOLD
         sorter_params["initial_threshold"] = INITIAL_THRESHOLD
+        sorter_params["subsampling_presence"] = SUBSAMPLING_PRESENCE
         sorter_params["whiten_temporal_length"] = WHITEN_TEMPORAL_LENGTH
         sorter_params["spikeinterface_merge_preset"] = SI_MERGE_PRESET
 
@@ -330,6 +343,12 @@ if __name__ == "__main__":
                 shutil.copy(
                     spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
                 )
+
+            if COPY_DARTSORT_OUTPUT_TO_RESULTS:
+                shutil.copytree(
+                    spikesorted_raw_output_folder / recording_name, sorting_output_folder / "dartsort_output"
+                )
+
             # safe delete the output folder
             try:
                 shutil.rmtree(spikesorted_raw_output_folder / recording_name)

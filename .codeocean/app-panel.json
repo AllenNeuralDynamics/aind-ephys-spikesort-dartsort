@@ -60,6 +60,13 @@
 			"default_value": "9"
 		},
 		{
+			"id": "c3abSDUWmbwBSoJt",
+			"name": "subsampling presence",
+			"type": "text",
+			"value_type": "string",
+			"default_value": "0.1"
+		},
+		{
 			"id": "8CZK9HLwd8aQ9vxC",
 			"name": "whiten temporal length",
 			"type": "text",
