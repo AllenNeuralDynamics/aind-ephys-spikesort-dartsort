@@ -345,6 +345,7 @@ if __name__ == "__main__":
                 )
 
             if COPY_DARTSORT_OUTPUT_TO_RESULTS:
+                logging.info(f"\tCopying dartsort results to {sorting_output_folder}")
                 shutil.copytree(
                     spikesorted_raw_output_folder / recording_name, sorting_output_folder / "dartsort_output"
                 )
@@ -363,6 +364,7 @@ if __name__ == "__main__":
                 logging.info("Error log:\n")
                 pprint(spike_sorter_log)
             else:
+                logging.info("Error log:\n{e}")
                 logging.info("No log found.")
             if RAISE_IF_FAILS:
                 raise Exception(e)
