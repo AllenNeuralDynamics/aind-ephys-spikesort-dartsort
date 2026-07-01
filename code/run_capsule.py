@@ -364,8 +364,7 @@ if __name__ == "__main__":
                 logging.info("Error log:\n")
                 pprint(spike_sorter_log)
             else:
-                logging.info("Error log:\n{e}")
-                logging.info("No log found.")
+                logging.info(f"Error log:\n{e}")
             if RAISE_IF_FAILS:
                 raise Exception(e)
             else:
