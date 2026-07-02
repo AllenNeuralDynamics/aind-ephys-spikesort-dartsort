@@ -15,10 +15,6 @@
 					"version": "2.8.1"
 				},
 				{
-					"name": "aind-log-utils",
-					"version": "0.2.7"
-				},
-				{
 					"name": "dartsort",
 					"version": "0.5.11"
 				},

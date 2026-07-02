@@ -180,7 +180,7 @@ if __name__ == "__main__":
             asset_name=session_name,
         )
     else:
-        logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(message)s")
+        logging.basicConfig(level=14, stream=sys.stdout, format="%(message)s")
 
     data_process_prefix = "data_process_spikesorting"
 
@@ -218,10 +218,7 @@ if __name__ == "__main__":
     else:
         preprocessed_folder = data_folder
 
-    # try results here
-    spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
     spikesorting_data_processes = []
-
     preprocessed_folders = [p for p in preprocessed_folder.iterdir() if p.is_dir() and "preprocessed_" in p.name]
     for recording_folder in preprocessed_folders:
         datetime_start_sorting = datetime.now()
@@ -233,6 +230,12 @@ if __name__ == "__main__":
         binary_pickle_file = preprocessed_folder / f"binary_{recording_name}.pkl"
         sorting_output_folder = results_folder / f"spikesorted_{recording_name}"
         sorting_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
+
+            # try results here
+        if COPY_DARTSORT_OUTPUT_TO_RESULTS:
+            spikesorted_raw_output_folder = results_folder / f"dartsort_{recording_name}"
+        else:
+            spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
 
         logging.info(f"Sorting recording: {recording_name}")
         try:
@@ -342,12 +345,6 @@ if __name__ == "__main__":
             if (spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json").is_file():
                 shutil.copy(
                     spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
-                )
-
-            if COPY_DARTSORT_OUTPUT_TO_RESULTS:
-                logging.info(f"\tCopying dartsort results to {sorting_output_folder}")
-                shutil.copytree(
-                    spikesorted_raw_output_folder / recording_name, sorting_output_folder / "dartsort_output"
                 )
 
             # safe delete the output folder
