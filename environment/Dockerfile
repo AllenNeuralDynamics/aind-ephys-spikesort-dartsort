@@ -1,4 +1,4 @@
-# hash:sha256:ca8e239e21e8029a6458475fa677c5b1fb265b3f7a8820d24c260d9a3d60f9b0
+# hash:sha256:213e57f951bcfb370a3b9a4f667ef566bb4e418fb5198689934b1a9eaa8e840b
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/pytorch:2.4.0-cuda12.4.0-mambaforge24.5.0-0-python3.12.4-ubuntu22.04
 
@@ -8,7 +8,7 @@ COPY git-ask-pass /
 
 RUN pip install -U --no-cache-dir \
     aind-data-schema==2.8.1 \
-    dartsort==0.5.11 \
+    dartsort==0.5.12 \
     scipy==1.17.1 \
     spikeinterface[full]==0.104.7
 

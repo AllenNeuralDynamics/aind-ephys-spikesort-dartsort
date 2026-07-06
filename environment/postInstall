@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-git clone https://github.com/cwindolf/dartsort.git
-cd dartsort
-git checkout b42b787b82b51c1bef6fba20dd27516b90159c6c
-pip install .
-cd ..
+# git clone https://github.com/cwindolf/dartsort.git
+# cd dartsort
+# git checkout b42b787b82b51c1bef6fba20dd27516b90159c6c
+# pip install .
+# cd ..
