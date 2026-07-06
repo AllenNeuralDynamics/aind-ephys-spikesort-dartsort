@@ -180,7 +180,7 @@ if __name__ == "__main__":
             asset_name=session_name,
         )
     else:
-        logging.basicConfig(level=14, stream=sys.stdout, format="%(message)s")
+        logging.basicConfig(level=15, stream=sys.stdout, format="%(message)s")
 
     data_process_prefix = "data_process_spikesorting"
 
