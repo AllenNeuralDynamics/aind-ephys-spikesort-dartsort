@@ -180,7 +180,7 @@ if __name__ == "__main__":
             asset_name=session_name,
         )
     else:
-        logging.basicConfig(level=15, stream=sys.stdout, format="%(message)s")
+        logging.basicConfig(level=14, stream=sys.stdout, format="%(message)s")
 
     data_process_prefix = "data_process_spikesorting"
 
@@ -253,7 +253,7 @@ if __name__ == "__main__":
             # create an empty result file (needed for pipeline)
             sorting_output_folder.mkdir(parents=True, exist_ok=True)
             error_file = sorting_output_folder / "error.txt"
-            error_file.write_text("Too many bad channels")
+            error_file.write_text("Spike sorting error")
             continue
 
         # concatenate segments if needed (required by some sorters)
