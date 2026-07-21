@@ -79,6 +79,18 @@
 			"type": "text",
 			"value_type": "string",
 			"default_value": "dartsort_slay_xc_ccg"
+		},
+		{
+			"id": "UCnpR7t5aGamxAiK",
+			"name": "agg_kind",
+			"type": "list",
+			"value_type": "string",
+			"default_value": "template_distance",
+			"extra_data": [
+				"template_distance",
+				"qda",
+				"none"
+			]
 		}
 	]
 }

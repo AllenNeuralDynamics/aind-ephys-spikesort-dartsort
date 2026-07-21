@@ -96,6 +96,10 @@ si_merge_preset_group = parser.add_mutually_exclusive_group()
 si_merge_preset_group.add_argument("--si-merge-preset", default="dartsort_slay_xc_ccg", help="")
 si_merge_preset_group.add_argument("static_si_merge_preset", nargs="?", help="")
 
+agg_kind_group = parser.add_mutually_exclusive_group()
+agg_kind_group.add_argument("--agg-kind", default="template_distance", help="")
+agg_kind_group.add_argument("static_agg_kind", nargs="?", help="")
+
 n_jobs_group = parser.add_mutually_exclusive_group()
 n_jobs_help = (
     "Number of jobs to use for parallel processing. Default is -1 (all available cores). "
@@ -105,6 +109,9 @@ n_jobs_group.add_argument("static_n_jobs", nargs="?", default="-1", help=n_jobs_
 n_jobs_group.add_argument("--n-jobs", default="-1", help=n_jobs_help)
 
 parser.add_argument("--params", default=None, help="Path to the parameters file or JSON string. If given, it will override all other arguments.")
+
+# change this to control verbosity (14 --> verbose)
+LOG_LEVEL = 14
 
 
 if __name__ == "__main__":
@@ -131,6 +138,7 @@ if __name__ == "__main__":
         SUBSAMPLING_PRESENCE = spikesorting_params.pop("subsampling_presence", 0.1)
         WHITEN_TEMPORAL_LENGTH = spikesorting_params.pop("whiten_temporal_length", 3)
         SI_MERGE_PRESET = spikesorting_params.pop("si_merge_preset", "dartsort_slay_xc_ccg")
+        AGG_KIND = spikesorting_params.pop("agg_kind", "template_distance")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
         MIN_DRIFT_CHANNELS = args.static_min_channels_for_drift or args.min_drift_channels
@@ -146,6 +154,7 @@ if __name__ == "__main__":
         WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
         WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
         SI_MERGE_PRESET = args.static_si_merge_preset or args.si_merge_preset
+        AGG_KIND = args.static_agg_kind or args.agg_kind
 
         # read default parameters from JSON file
         default_params_file = Path(__file__).parent / "params.json"
@@ -180,7 +189,7 @@ if __name__ == "__main__":
             asset_name=session_name,
         )
     else:
-        logging.basicConfig(level=14, stream=sys.stdout, format="%(message)s")
+        logging.basicConfig(level=LOG_LEVEL, stream=sys.stdout, format="%(message)s")
 
     data_process_prefix = "data_process_spikesorting"
 
@@ -202,6 +211,7 @@ if __name__ == "__main__":
     logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
     logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
     logging.info(f"\tSI_MERGE_PRESET: {SI_MERGE_PRESET}")
+    logging.info(f"\tAGG_KIND: {AGG_KIND}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
     assert 0 < SUBSAMPLING_PRESENCE < 1, f"Subsampling presence must be between 0 and 1 (excluded): {SUBSAMPLING_PRESENCE} is invalid"
@@ -293,6 +303,7 @@ if __name__ == "__main__":
         sorter_params["subsampling_presence"] = SUBSAMPLING_PRESENCE
         sorter_params["whiten_temporal_length"] = WHITEN_TEMPORAL_LENGTH
         sorter_params["spikeinterface_merge_preset"] = SI_MERGE_PRESET
+        sorter_params["agg_kind"] = AGG_KIND
 
         # run sorter
         try:
