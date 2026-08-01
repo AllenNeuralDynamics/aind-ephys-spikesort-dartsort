@@ -50,7 +50,7 @@
 			"name": "matching threshold",
 			"type": "text",
 			"value_type": "string",
-			"default_value": "8"
+			"default_value": "6"
 		},
 		{
 			"id": "h69VK6xLCyr0E59K",

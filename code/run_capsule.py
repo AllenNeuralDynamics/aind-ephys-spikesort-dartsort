@@ -77,7 +77,7 @@ use_preprocessing_motion_group.add_argument("--do-not-use-preprocessing-motion",
 use_preprocessing_motion_group.add_argument("static_use_preprocessing_motion", nargs="?", help=use_preprocessing_motion_help)
 
 matching_threshold_group = parser.add_mutually_exclusive_group()
-matching_threshold_group.add_argument("--matching-threshold", default="8", help="")
+matching_threshold_group.add_argument("--matching-threshold", default="6", help="")
 matching_threshold_group.add_argument("static_matching_threshold", nargs="?", help="")
 
 initial_threshold_group = parser.add_mutually_exclusive_group()
