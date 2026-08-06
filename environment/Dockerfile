@@ -1,6 +1,6 @@
-# hash:sha256:a1688060160e9ef1853c2dea8b792bd381876556878a0cf99c553dce42342127
+# hash:sha256:80e1023dda72b0c85c2e54d63a7fa17bf7d28b64ea5c45c85c45a8676fb1b517
 ARG REGISTRY_HOST
-FROM $REGISTRY_HOST/codeocean/cuda12-runtime-uv:main-5692e50
+FROM $REGISTRY_HOST/codeocean/pytorch:2.4.0-cuda12.4.0-mambaforge24.5.0-0-python3.12.4-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG GIT_ASKPASS
@@ -10,10 +10,7 @@ RUN pip install -U --no-cache-dir \
     aind-data-schema==2.8.1 \
     dartsort==0.5.21 \
     scipy==1.17.1 \
-    spikeinterface[full]==0.104.7 \
-    torch==2.13.0 \
-    torchaudio==2.11.0 \
-    torchvision==0.28.0
+    spikeinterface[full]==0.104.7
 
 COPY postInstall /
 RUN --mount=type=secret,id=secrets . /run/secrets/secrets \
