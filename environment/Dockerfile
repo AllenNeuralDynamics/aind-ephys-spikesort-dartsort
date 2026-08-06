@@ -18,4 +18,3 @@ RUN pip install -U --no-cache-dir \
 COPY postInstall /
 RUN --mount=type=secret,id=secrets . /run/secrets/secrets \
     && /postInstall
-
