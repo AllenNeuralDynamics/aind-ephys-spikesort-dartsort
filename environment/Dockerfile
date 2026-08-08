@@ -1,4 +1,4 @@
-# hash:sha256:c141e046e6b15a2168ca34197d1210eba0ac27ae4a1fac1b38926fe4f382d5c5
+# hash:sha256:036a64f80d5d73ef7c5bf79a6a30d7abc6bf19035c83f3f2a618943823630ba9
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/cuda12-runtime-uv:main-5692e50
 
@@ -15,7 +15,7 @@ RUN apt-get update \
 
 RUN pip install -U --no-cache-dir \
     aind-data-schema==2.8.1 \
-    dartsort==0.5.21 \
+    dartsort==0.5.22 \
     scipy==1.17.1 \
     spikeinterface[full]==0.104.7 \
     torch==2.13.0 \
