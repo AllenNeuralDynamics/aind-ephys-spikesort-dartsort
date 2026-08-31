@@ -333,6 +333,7 @@ if __name__ == "__main__":
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
             if sorting_params is None:
                 sorting_params = dartsort_params
+                sorting_params["sorter_name"] = SORTER_NAME
 
             # remove empty units
             sorting = sorting.remove_empty_units()
@@ -390,7 +391,7 @@ if __name__ == "__main__":
             process_type=ProcessName.SPIKE_SORTING,
             stage=ProcessStage.PROCESSING,
             name="Spike sorting",
-            experimenters=["Unknown"],
+            experimenters=["AIND Pipeline"],
             code=Code(
                 url=URL,
                 version=VERSION,  # either release or git commit
