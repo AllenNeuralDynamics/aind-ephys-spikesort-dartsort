@@ -74,22 +74,15 @@
 			"default_value": "3"
 		},
 		{
-			"id": "Yo42LjmtowA4q7Px",
-			"name": "spikeinterface merge preset",
-			"type": "text",
-			"value_type": "string",
-			"default_value": "dartsort_slay_xc_ccg"
-		},
-		{
 			"id": "UCnpR7t5aGamxAiK",
-			"name": "agg_kind",
+			"name": "postprocessing",
 			"type": "list",
 			"value_type": "string",
-			"default_value": "template_distance",
+			"default_value": "agglomerate_and_clean",
 			"extra_data": [
-				"template_distance",
-				"qda",
-				"none"
+				"agglomerate_and_clean",
+				"agglomerate",
+				"clean"
 			]
 		}
 	]

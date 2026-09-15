@@ -92,13 +92,9 @@ whiten_temporal_length_group = parser.add_mutually_exclusive_group()
 whiten_temporal_length_group.add_argument("--whiten-temporal-length", default="3", help="")
 whiten_temporal_length_group.add_argument("static_whiten_temporal_length", nargs="?", help="")
 
-si_merge_preset_group = parser.add_mutually_exclusive_group()
-si_merge_preset_group.add_argument("--si-merge-preset", default="dartsort_slay_xc_ccg", help="")
-si_merge_preset_group.add_argument("static_si_merge_preset", nargs="?", help="")
-
-agg_kind_group = parser.add_mutually_exclusive_group()
-agg_kind_group.add_argument("--agg-kind", default="template_distance", help="")
-agg_kind_group.add_argument("static_agg_kind", nargs="?", help="")
+postprocessing_group = parser.add_mutually_exclusive_group()
+postprocessing_group.add_argument("--postprocessing", default="agglomerate_and_clean", help="")
+postprocessing_group.add_argument("static_postprocessing", nargs="?", help="")
 
 n_jobs_group = parser.add_mutually_exclusive_group()
 n_jobs_help = (
@@ -137,8 +133,7 @@ if __name__ == "__main__":
         INITIAL_THRESHOLD = spikesorting_params.pop("initial_threshold", 9.)
         SUBSAMPLING_PRESENCE = spikesorting_params.pop("subsampling_presence", 0.1)
         WHITEN_TEMPORAL_LENGTH = spikesorting_params.pop("whiten_temporal_length", 3)
-        SI_MERGE_PRESET = spikesorting_params.pop("si_merge_preset", "dartsort_slay_xc_ccg")
-        AGG_KIND = spikesorting_params.pop("agg_kind", "template_distance")
+        POSTPROCESSING = spikesorting_params.pop("postprocessing", "agglomerate_and_clean")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
         MIN_DRIFT_CHANNELS = args.static_min_channels_for_drift or args.min_drift_channels
@@ -153,8 +148,7 @@ if __name__ == "__main__":
         SUBSAMPLING_PRESENCE = float(SUBSAMPLING_PRESENCE)
         WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
         WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
-        SI_MERGE_PRESET = args.static_si_merge_preset or args.si_merge_preset
-        AGG_KIND = args.static_agg_kind or args.agg_kind
+        POSTPROCESSING = args.static_postprocessing or args.postprocessing
 
         # read default parameters from JSON file
         default_params_file = Path(__file__).parent / "params.json"
@@ -210,8 +204,7 @@ if __name__ == "__main__":
     logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
     logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
     logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
-    logging.info(f"\tSI_MERGE_PRESET: {SI_MERGE_PRESET}")
-    logging.info(f"\tAGG_KIND: {AGG_KIND}")
+    logging.info(f"\POSTPROCESSING: {POSTPROCESSING}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
     assert 0 < SUBSAMPLING_PRESENCE < 1, f"Subsampling presence must be between 0 and 1 (excluded): {SUBSAMPLING_PRESENCE} is invalid"
@@ -302,8 +295,7 @@ if __name__ == "__main__":
         sorter_params["initial_threshold"] = INITIAL_THRESHOLD
         sorter_params["subsampling_presence"] = SUBSAMPLING_PRESENCE
         sorter_params["whiten_temporal_length"] = WHITEN_TEMPORAL_LENGTH
-        sorter_params["spikeinterface_merge_preset"] = SI_MERGE_PRESET
-        sorter_params["agg_kind"] = AGG_KIND
+        sorter_params["postprocessing"] = POSTPROCESSING
 
         # run sorter
         try:
