@@ -204,7 +204,7 @@ if __name__ == "__main__":
     logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
     logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
     logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
-    logging.info(f"\POSTPROCESSING: {POSTPROCESSING}")
+    logging.info(f"\tPOSTPROCESSING: {POSTPROCESSING}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
     assert 0 < SUBSAMPLING_PRESENCE < 1, f"Subsampling presence must be between 0 and 1 (excluded): {SUBSAMPLING_PRESENCE} is invalid"
