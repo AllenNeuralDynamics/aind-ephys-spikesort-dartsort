@@ -1,4 +1,4 @@
-# hash:sha256:3ff0d1e19e7646d26e339253ddc6fa7559c37068bcbfb5b88ecdade8e57eb28b
+# hash:sha256:21d14226422ef8dfcc35d9b3b9d8b20060e3aca00b34e5f4fd68b5e5f4366ef4
 ARG REGISTRY_HOST
 FROM $REGISTRY_HOST/codeocean/cuda12-runtime-uv:main-5692e50
 
@@ -17,7 +17,7 @@ RUN pip install -U --no-cache-dir \
     aind-data-schema==2.8.1 \
     dartsort==0.5.26 \
     scipy==1.17.1 \
-    spikeinterface[full]==0.104.7 \
+    spikeinterface[full]==0.105.0 \
     torch==2.13.0 \
     torchaudio==2.11.0 \
     torchvision==0.28.0
