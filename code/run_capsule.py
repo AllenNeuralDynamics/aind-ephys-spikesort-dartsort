@@ -12,6 +12,7 @@ from pathlib import Path
 import shutil
 import json
 import time
+import traceback
 from pprint import pprint
 import logging
 from datetime import datetime, timedelta
@@ -373,6 +374,16 @@ if __name__ == "__main__":
                 (sorting_output_folder).mkdir(parents=True, exist_ok=True)
                 if log_file.is_file():
                     shutil.copy(log_file, sorting_output_folder)
+                else:
+                    # an empty folder does not survive pipeline staging, so downstream would never see the failure
+                    error_log = dict(
+                        sorter_name="dartsort",
+                        sorter_version=dartsort_version,
+                        error=True,
+                        error_trace=traceback.format_exc(),
+                    )
+                    with open(sorting_output_folder / "spikeinterface_log.json", "w") as f:
+                        json.dump(error_log, f, indent=4)
                 sorting_outputs = dict()
                 sorting_params = dict()
 
