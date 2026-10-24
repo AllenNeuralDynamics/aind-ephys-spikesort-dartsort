@@ -127,13 +127,13 @@ if __name__ == "__main__":
             else:
                 raise ValueError(f"Invalid parameters: {PARAMS} is not a valid JSON string or file path")
         SKIP_MOTION_CORRECTION = spikesorting_params.pop("skip_motion_correction", False)
-        MIN_DRIFT_CHANNELS = spikesorting_params.pop("min_drift_channels", 64)
+        MIN_DRIFT_CHANNELS = int(spikesorting_params.pop("min_drift_channels", 64))
         RAISE_IF_FAILS = spikesorting_params.pop("raise_if_fails", True)
         USE_PREPROCESSING_MOTION = spikesorting_params.pop("use_preprocessing_motion", True)
-        MATCHING_THRESHOLD = spikesorting_params.pop("matching_threshold", 8.)
-        INITIAL_THRESHOLD = spikesorting_params.pop("initial_threshold", 9.)
-        SUBSAMPLING_PRESENCE = spikesorting_params.pop("subsampling_presence", 0.1)
-        WHITEN_TEMPORAL_LENGTH = spikesorting_params.pop("whiten_temporal_length", 3)
+        MATCHING_THRESHOLD = float(spikesorting_params.pop("matching_threshold", 8.))
+        INITIAL_THRESHOLD = float(spikesorting_params.pop("initial_threshold", 9.))
+        SUBSAMPLING_PRESENCE = float(spikesorting_params.pop("subsampling_presence", 0.1))
+        WHITEN_TEMPORAL_LENGTH = int(spikesorting_params.pop("whiten_temporal_length", 3))
         POSTPROCESSING = spikesorting_params.pop("postprocessing", "agglomerate_and_clean")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
