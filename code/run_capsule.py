@@ -222,7 +222,7 @@ def run() -> None:
     else:
         preprocessed_folder = data_folder
 
-    spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
+    spikesorted_raw_output_folder = (scratch_folder / "spikesorted_raw").resolve()
 
     preprocessed_folders = [p for p in preprocessed_folder.iterdir() if p.is_dir() and "preprocessed_" in p.name]
     for recording_folder in preprocessed_folders:
