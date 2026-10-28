@@ -9,6 +9,9 @@
     "sorter": {
         "preprocessing": "standardize",
         "work_in_tmpdir": true,
-        "tmpdir_parent": "../scratch"
+        "tmpdir_parent": "../scratch",
+        "copy_recording_to_tmpdir": "no",
+        "motion_batching_mode": "online",
+        "save_intermediates": true
     }
 }
