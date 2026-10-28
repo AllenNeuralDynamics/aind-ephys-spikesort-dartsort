@@ -121,7 +121,6 @@ def run() -> None:
         MATCHING_THRESHOLD = float(spikesorting_params.pop("matching_threshold", 8.))
         INITIAL_THRESHOLD = float(spikesorting_params.pop("initial_threshold", 9.))
         SUBSAMPLING_PRESENCE = float(spikesorting_params.pop("subsampling_presence", 0.1))
-        WHITEN_TEMPORAL_LENGTH = int(spikesorting_params.pop("whiten_temporal_length", 3))
         POSTPROCESSING = spikesorting_params.pop("postprocessing", "agglomerate_and_clean")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
@@ -135,8 +134,6 @@ def run() -> None:
         INITIAL_THRESHOLD = float(INITIAL_THRESHOLD)
         SUBSAMPLING_PRESENCE = args.static_subsampling_presence or args.subsampling_presence
         SUBSAMPLING_PRESENCE = float(SUBSAMPLING_PRESENCE)
-        WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
-        WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
         POSTPROCESSING = args.static_postprocessing or args.postprocessing
 
         # read default parameters from JSON file
@@ -208,7 +205,6 @@ def run() -> None:
     logging.info(f"\tMATCHING_THRESHOLD: {MATCHING_THRESHOLD}")
     logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
     logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
-    logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
     logging.info(f"\tPOSTPROCESSING: {POSTPROCESSING}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
@@ -226,6 +222,8 @@ def run() -> None:
     else:
         preprocessed_folder = data_folder
 
+    spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
+
     preprocessed_folders = [p for p in preprocessed_folder.iterdir() if p.is_dir() and "preprocessed_" in p.name]
     for recording_folder in preprocessed_folders:
         datetime_start_sorting = datetime.now()
@@ -237,12 +235,6 @@ def run() -> None:
         binary_pickle_file = preprocessed_folder / f"binary_{recording_name}.pkl"
         sorting_output_folder = results_folder / f"spikesorted_{recording_name}"
         sorting_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
-
-            # try results here
-        if COPY_DARTSORT_OUTPUT_TO_RESULTS:
-            spikesorted_raw_output_folder = results_folder / f"dartsort_{recording_name}"
-        else:
-            spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
 
         logging.info(f"Sorting recording: {recording_name}")
         try:

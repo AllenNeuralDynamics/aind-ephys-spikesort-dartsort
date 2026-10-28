@@ -1,7 +1,6 @@
 {
 	"version": 1,
 	"base_image": "codeocean/cuda12-runtime-uv:main-5692e50",
-	"post_install": true,
 	"options": {
 		"registry_host_arg": true,
 		"git_ask_pass": true,
@@ -25,7 +24,11 @@
 				},
 				{
 					"name": "dartsort",
-					"version": "0.5.26"
+					"version": "0.5.31"
+				},
+				{
+					"name": "log-schema",
+					"version": "0.2.10.dev1"
 				},
 				{
 					"name": "scipy",
@@ -33,7 +36,7 @@
 				},
 				{
 					"name": "spikeinterface[full]",
-					"version": "0.104.7"
+					"version": "0.105.4"
 				},
 				{
 					"name": "torch",
