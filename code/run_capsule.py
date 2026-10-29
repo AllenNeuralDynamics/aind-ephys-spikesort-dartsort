@@ -33,22 +33,13 @@ from aind_data_schema.core.processing import DataProcess, ProcessStage
 from aind_data_schema.components.identifiers import Code
 from aind_data_schema_models.process_names import ProcessName
 
-try:
-    from aind_log_utils import log
-    HAVE_AIND_LOG_UTILS = True
-except ImportError:
-    HAVE_AIND_LOG_UTILS = False
+URL = os.getenv("CODE_REPO", "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-dartsort")
+VERSION = os.getenv("CODE_VERSION", "1.0")
 
-# TODO: update with the actual URL and version of the capsule
-URL = "https://github.com/cwindolf/dartsort"
-VERSION = "1.0"
+SORTER_NAME = "dartsort"
 
-# TODO: replace with the actual sorter name
-SORTER_NAME = "DARTSort"
 MOTION_CORRECTION_SUPPORTED = True  # set to True if the sorter supports motion correction
 MOTION_CORRECTION_PARAM_NAME = "do_motion_estimation"  # set to the actual parameter name used by the sorter to enable/disable motion correction
-
-COPY_DARTSORT_OUTPUT_TO_RESULTS = True
 
 data_folder = Path("../data")
 results_folder = Path("../results")
@@ -89,10 +80,6 @@ subsampling_presence_group = parser.add_mutually_exclusive_group()
 subsampling_presence_group.add_argument("--subsampling-presence", default="0.1", help="")
 subsampling_presence_group.add_argument("static_subsampling_presence", nargs="?", help="")
 
-whiten_temporal_length_group = parser.add_mutually_exclusive_group()
-whiten_temporal_length_group.add_argument("--whiten-temporal-length", default="3", help="")
-whiten_temporal_length_group.add_argument("static_whiten_temporal_length", nargs="?", help="")
-
 postprocessing_group = parser.add_mutually_exclusive_group()
 postprocessing_group.add_argument("--postprocessing", default="agglomerate_and_clean", help="")
 postprocessing_group.add_argument("static_postprocessing", nargs="?", help="")
@@ -111,7 +98,8 @@ parser.add_argument("--params", default=None, help="Path to the parameters file 
 LOG_LEVEL = 14
 
 
-if __name__ == "__main__":
+def run() -> None:
+    """Entrypoint for the spike sorting capsule."""
     args = parser.parse_args()
 
     PARAMS = args.params
@@ -133,7 +121,6 @@ if __name__ == "__main__":
         MATCHING_THRESHOLD = float(spikesorting_params.pop("matching_threshold", 8.))
         INITIAL_THRESHOLD = float(spikesorting_params.pop("initial_threshold", 9.))
         SUBSAMPLING_PRESENCE = float(spikesorting_params.pop("subsampling_presence", 0.1))
-        WHITEN_TEMPORAL_LENGTH = int(spikesorting_params.pop("whiten_temporal_length", 3))
         POSTPROCESSING = spikesorting_params.pop("postprocessing", "agglomerate_and_clean")
     else:
         SKIP_MOTION_CORRECTION = True if args.static_skip_motion_correction and args.static_skip_motion_correction.lower() == "true" else args.skip_motion_correction
@@ -147,8 +134,6 @@ if __name__ == "__main__":
         INITIAL_THRESHOLD = float(INITIAL_THRESHOLD)
         SUBSAMPLING_PRESENCE = args.static_subsampling_presence or args.subsampling_presence
         SUBSAMPLING_PRESENCE = float(SUBSAMPLING_PRESENCE)
-        WHITEN_TEMPORAL_LENGTH = args.static_whiten_temporal_length or args.whiten_temporal_length
-        WHITEN_TEMPORAL_LENGTH = int(WHITEN_TEMPORAL_LENGTH)
         POSTPROCESSING = args.static_postprocessing or args.postprocessing
 
         # read default parameters from JSON file
@@ -157,6 +142,9 @@ if __name__ == "__main__":
             with open(default_params_file, "r") as f:
                 spikesorting_params = json.load(f)
 
+    # TODO: temporary - remove from params.json when logging is distributed by pipeline
+    LOGGING = spikesorting_params.pop("logging", None)
+
     N_JOBS = args.static_n_jobs or args.n_jobs
     N_JOBS = int(N_JOBS) if not N_JOBS.startswith("0.") else float(N_JOBS)
 
@@ -164,27 +152,40 @@ if __name__ == "__main__":
     N_JOBS_EXT = os.getenv("CO_CPUS") or os.getenv("N_JOBS_EXT")
     N_JOBS = int(N_JOBS_EXT) if N_JOBS_EXT is not None else N_JOBS
 
-    # look for subject and data_description JSON files
-    subject_id = "undefined"
-    session_name = "undefined"
-    for f in data_folder.iterdir():
-        # the file name is {recording_name}_subject.json
-        if "subject.json" in f.name:
-            with open(f, "r") as file:
-                subject_id = json.load(file)["subject_id"]
-        # the file name is {recording_name}_data_description.json
-        if "data_description.json" in f.name:
-            with open(f, "r") as file:
-                session_name = json.load(file)["name"]
-
-    if HAVE_AIND_LOG_UTILS:
-        log.setup_logging(
-            f"Spikesort {SORTER_NAME} Ecephys",
-            subject_id=subject_id,
-            asset_name=session_name,
-        )
+    # setup logging before any other logging call
+    if LOGGING is None:
+        logging.basicConfig(level="INFO", stream=sys.stdout, format="%(message)s")
     else:
-        logging.basicConfig(level=LOG_LEVEL, stream=sys.stdout, format="%(message)s")
+        if LOGGING["package"] == "logging":
+            logging_cfg = LOGGING.get("logging_cfg", {})
+            logging.basicConfig(stream=sys.stdout, **logging_cfg)
+        elif LOGGING["package"] == "log-schema":
+            import log_schema
+
+            pipeline_name = LOGGING.get("pipeline_name", "AIND Ephys Pipeline")
+            acquisition_name = LOGGING.get("acquisition_name", None)
+
+            if acquisition_name is None:
+                data_description_json = list(data_folder.glob("**/*data_description.json"))
+                if len(data_description_json) > 0:
+                    data_description_json = data_description_json[0]
+                    with open(data_description_json, "r") as f:
+                        data_description = json.load(f)
+                    acquisition_name = data_description["name"]
+
+            config = LOGGING.get("logging_cfg")
+            if config is not None and len(config) == 0:
+                config = None
+            log_schema.setup_logging(
+                config=config,
+                model={
+                    "pipeline_name": pipeline_name,
+                    "acquisition_name": acquisition_name,
+                    "process_name": "Spike Sorting DartSort"
+                }
+            )
+
+    logging.info("Begin processing...", extra={"event_type": "stage_start"})
 
     data_process_prefix = "data_process_spikesorting"
 
@@ -204,7 +205,6 @@ if __name__ == "__main__":
     logging.info(f"\tMATCHING_THRESHOLD: {MATCHING_THRESHOLD}")
     logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
     logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
-    logging.info(f"\tWHITEN_TEMPORAL_LENGTH: {WHITEN_TEMPORAL_LENGTH}")
     logging.info(f"\tPOSTPROCESSING: {POSTPROCESSING}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
@@ -222,7 +222,8 @@ if __name__ == "__main__":
     else:
         preprocessed_folder = data_folder
 
-    spikesorting_data_processes = []
+    spikesorted_raw_output_folder = (scratch_folder / "spikesorted_raw").resolve()
+
     preprocessed_folders = [p for p in preprocessed_folder.iterdir() if p.is_dir() and "preprocessed_" in p.name]
     for recording_folder in preprocessed_folders:
         datetime_start_sorting = datetime.now()
@@ -234,12 +235,6 @@ if __name__ == "__main__":
         binary_pickle_file = preprocessed_folder / f"binary_{recording_name}.pkl"
         sorting_output_folder = results_folder / f"spikesorted_{recording_name}"
         sorting_output_process_json = results_folder / f"{data_process_prefix}_{recording_name}.json"
-
-            # try results here
-        if COPY_DARTSORT_OUTPUT_TO_RESULTS:
-            spikesorted_raw_output_folder = results_folder / f"dartsort_{recording_name}"
-        else:
-            spikesorted_raw_output_folder = scratch_folder / "spikesorted_raw"
 
         logging.info(f"Sorting recording: {recording_name}")
         try:
@@ -291,42 +286,33 @@ if __name__ == "__main__":
                         recording = recording.get_parent()
 
         sorter_params["n_jobs_small"] = N_JOBS - 2
-
         sorter_params["matching_threshold"] = MATCHING_THRESHOLD
         sorter_params["initial_threshold"] = INITIAL_THRESHOLD
         sorter_params["subsampling_presence"] = SUBSAMPLING_PRESENCE
-        sorter_params["whiten_temporal_length"] = WHITEN_TEMPORAL_LENGTH
         sorter_params["postprocessing"] = POSTPROCESSING
 
         # run sorter
         try:
-            # cfg = DARTsortUserConfig(**sorter_params)
-            # dartsort_params = TypeAdapter(DARTsortUserConfig).dump_python(cfg)
-            # Use Dev config to play around with params for now
-            cfg = DeveloperConfig(**sorter_params)
-            dartsort_params = TypeAdapter(DeveloperConfig).dump_python(cfg)
-            logging.info(f"DartSort CFG:\n{dartsort_params}")
-            spikesorted_raw_output_folder.mkdir(exist_ok=True)
-            t_start_dartsort = time.perf_counter()
-            results_dartsort = dartsort(recording, output_dir=spikesorted_raw_output_folder / recording_name, cfg=cfg, si_motion=si_motion)
-            sorting = results_dartsort["sorting"].to_numpy_sorting()
-            t_stop_dartsort = time.perf_counter()
-
-            # Save spikeinterface log
-            log = dict(
-                sorter_name="dartsort",
-                sorter_version=dartsort_version,
-                run_time=t_stop_dartsort - t_start_dartsort
+            sorting = ss.run_sorter(
+                SORTER_NAME,
+                recording,
+                folder=spikesorted_raw_output_folder / recording_name,
+                verbose=False,
+                delete_output_folder=False,
+                remove_existing_folder=True,
+                **sorter_params,
             )
-            with open(spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", "w") as f:
-                json.dump(log, f)
-            
             logging.info(f"\tRaw sorting output: {sorting}")
             n_original_units = int(len(sorting.unit_ids))
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
             if sorting_params is None:
-                sorting_params = dartsort_params
-                sorting_params["sorter_name"] = SORTER_NAME
+                sorting.sorting_info["params"]
+
+            # safe delete the output folder
+            try:
+                shutil.rmtree(spikesorted_raw_output_folder / recording_name / "sorter_output")
+            except Exception as e:
+                logging.info(f"\tError deleting sorter output folder: {e}")
 
             # remove empty units
             sorting = sorting.remove_empty_units()
@@ -347,43 +333,21 @@ if __name__ == "__main__":
             # save results
             logging.info(f"\tSaving results to {sorting_output_folder}")
             sorting = sorting.save(folder=sorting_output_folder)
-            if (spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json").is_file():
-                shutil.copy(
-                    spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
-                )
-
-            # safe delete the output folder
-            try:
-                shutil.rmtree(spikesorted_raw_output_folder / recording_name)
-            except Exception as e:
-                logging.info(f"\tError deleting sorter output folder: {e}")
+            shutil.copy(
+                spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json", sorting_output_folder
+            )
         except Exception as e:
-            logging.info("\n\tSPIKE SORTING FAILED!")
             log_file = spikesorted_raw_output_folder / recording_name / "spikeinterface_log.json"
-            if log_file.is_file():
-                with open(log_file, "r") as f:
-                    spike_sorter_log = json.load(f)
-                logging.info("Error log:\n")
-                pprint(spike_sorter_log)
-            else:
-                logging.info(f"Error log:\n{e}")
+            with open(log_file, "r") as f:
+                spike_sorter_log = json.load(f)
+            logging.info("\n\tSPIKE SORTING FAILED!\nError log:\n")
+            pprint(spike_sorter_log)
             if RAISE_IF_FAILS:
                 raise Exception(e)
             else:
                 # save log to results
                 (sorting_output_folder).mkdir(parents=True, exist_ok=True)
-                if log_file.is_file():
-                    shutil.copy(log_file, sorting_output_folder)
-                else:
-                    # an empty folder does not survive pipeline staging, so downstream would never see the failure
-                    error_log = dict(
-                        sorter_name="dartsort",
-                        sorter_version=dartsort_version,
-                        error=True,
-                        error_trace=traceback.format_exc(),
-                    )
-                    with open(sorting_output_folder / "spikeinterface_log.json", "w") as f:
-                        json.dump(error_log, f, indent=4)
+                shutil.copy(log_file, sorting_output_folder)
                 sorting_outputs = dict()
                 sorting_params = dict()
 
@@ -412,3 +376,12 @@ if __name__ == "__main__":
     t_sorting_end_all = time.perf_counter()
     elapsed_time_sorting_all = np.round(t_sorting_end_all - t_sorting_start_all, 2)
     logging.info(f"SPIKE SORTING time: {elapsed_time_sorting_all}s")
+    logging.info("Pipeline stage completed", extra={"event_type": "stage_complete"})
+
+
+if __name__ == "__main__":
+    try:
+        run()
+    except Exception as e:
+        logging.exception("Pipeline stage failed", extra={"event_type": "stage_error"})
+        raise
