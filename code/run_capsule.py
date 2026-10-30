@@ -210,7 +210,7 @@ def run() -> None:
             n_original_units = int(len(sorting.unit_ids))
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
             if sorting_params is None:
-                sorting.sorting_info["params"]
+                sorting_params = sorting.sorting_info["params"]
 
             # safe delete the output folder
             try:
