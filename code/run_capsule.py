@@ -49,6 +49,7 @@ def run() -> None:
     with open(PARAMS_FILE, "r") as f:
         full_params = json.load(f)
     spikesorting_params = full_params["spikesorting"]["dartsort"]
+    motion_correction_params = full_params["preprocessing"]["motion_correction"]
     logging_params = full_params.get("logging", None)
     
     SKIP_MOTION_CORRECTION = spikesorting_params.pop("skip_motion_correction", False)
@@ -172,20 +173,33 @@ def run() -> None:
                 logging.info("Drift correction disabled")
                 sorter_params[MOTION_CORRECTION_PARAM_NAME] = False
 
-            if not SKIP_MOTION_CORRECTION and USE_PREPROCESSING_MOTION:
+            # dartsort uses si_motion even if do_motion_estimation is False, so only load it when drift correction is on
+            use_motion = recording.get_num_channels() >= MIN_DRIFT_CHANNELS and not SKIP_MOTION_CORRECTION
+            if use_motion and USE_PREPROCESSING_MOTION:
                 motion_folder = preprocessed_folder / f"motion_{recording_name}"
                 if motion_folder.is_dir():
                     motion_info = spre.load_motion_info(motion_folder)
                     si_motion = motion_info["motion"]
-                    logging.info(f"Using SI motion: {si_motion}")
-                    sorter_params["si_motion"] = si_motion
+                    if si_motion is not None:
+                        logging.info(f"Using SI motion: {si_motion}")
 
-                    # If motion correction was applied, retrieve pre-interpolation recording.
-                    # This is done since DartSort makes use of motion without interpolating the traces
-                    if isinstance(recording, InterpolateMotionRecording):
-                        logging.info("Undoing motion interpolation!")
-                        recording = recording.get_parent()
+                        # If motion correction was applied, retrieve pre-interpolation recording.
+                        # This is done since DartSort makes use of motion without interpolating the traces
+                        if not split_segments:
+                            if isinstance(recording, InterpolateMotionRecording):
+                                logging.info("Undoing motion interpolation!")
+                                # We need two parents because the chain is astype(float) -> InterpolateMotionRecording
+                                recording = recording.get_parent().get_parent()
+                        elif motion_correction_params["apply"]:
+                            # For multi-segment, reverting motion interpolation is more complex: recordings get concatenated,
+                            # motion-corrected, split into segments again. Handling this properly would require undoing the concatenation.
+                            logging.warning(
+                                "Cannot automatically undo motion interpolation for multi-segment recordings."
+                            )
+                            si_motion = None
 
+        # set for every recording (also to None) so motion from a previous recording is never reused
+        sorter_params["si_motion"] = si_motion
         sorter_params["n_jobs_small"] = N_JOBS - 2
 
         # run sorter
@@ -202,8 +216,10 @@ def run() -> None:
             logging.info(f"\tRaw sorting output: {sorting}")
             n_original_units = int(len(sorting.unit_ids))
             spikesorting_notes += f"\n- {SORTER_NAME} found {n_original_units} units, "
-            if sorting_params is None:
-                sorting_params = sorting.sorting_info["params"]
+            # per recording (motion params differ between recordings); keep a short summary of the motion
+            # instead of its full arrays in the processing metadata
+            sorting_params = sorting.sorting_info["params"]
+            sorting_params["sorter_params"]["si_motion"] = str(si_motion) if si_motion is not None else None
 
             # safe delete the output folder
             try:
