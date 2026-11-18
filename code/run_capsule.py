@@ -55,10 +55,6 @@ def run() -> None:
     MIN_DRIFT_CHANNELS = int(spikesorting_params.pop("min_drift_channels", 64))
     RAISE_IF_FAILS = spikesorting_params.pop("raise_if_fails", True)
     USE_PREPROCESSING_MOTION = spikesorting_params.pop("use_preprocessing_motion", True)
-    MATCHING_THRESHOLD = float(spikesorting_params.pop("matching_threshold", 8.))
-    INITIAL_THRESHOLD = float(spikesorting_params.pop("initial_threshold", 9.))
-    SUBSAMPLING_PRESENCE = float(spikesorting_params.pop("subsampling_presence", 0.1))
-    POSTPROCESSING = spikesorting_params.pop("postprocessing", "agglomerate_and_clean")
 
     # Use CO_CPUS/N_JOBS_EXT env variable if available
     N_JOBS_EXT = os.getenv("CO_CPUS") or os.getenv("N_JOBS_EXT")
@@ -106,13 +102,13 @@ def run() -> None:
     logging.info(f"\tSKIP_MOTION_CORRECTION: {SKIP_MOTION_CORRECTION}")
     logging.info(f"\tMIN_DRIFT_CHANNELS: {MIN_DRIFT_CHANNELS}")
     logging.info(f"\tUSE_PREPROCESSING_MOTION: {USE_PREPROCESSING_MOTION}")
-    logging.info(f"\tMATCHING_THRESHOLD: {MATCHING_THRESHOLD}")
-    logging.info(f"\tINITIAL_THRESHOLD: {INITIAL_THRESHOLD}")
-    logging.info(f"\tSUBSAMPLING_PRESENCE: {SUBSAMPLING_PRESENCE}")
-    logging.info(f"\tPOSTPROCESSING: {POSTPROCESSING}")
     logging.info(f"\tN_JOBS: {N_JOBS}")
 
-    assert 0 < SUBSAMPLING_PRESENCE < 1, f"Subsampling presence must be between 0 and 1 (excluded): {SUBSAMPLING_PRESENCE} is invalid"
+    # only validate if set: dartsort's own default is valid
+    subsampling_presence = sorter_params.get("subsampling_presence")
+    assert subsampling_presence is None or 0 < subsampling_presence < 1, (
+        f"Subsampling presence must be between 0 and 1 (excluded): {subsampling_presence} is invalid"
+    )
 
     sorting_params = None
 
@@ -182,6 +178,7 @@ def run() -> None:
                     motion_info = spre.load_motion_info(motion_folder)
                     si_motion = motion_info["motion"]
                     logging.info(f"Using SI motion: {si_motion}")
+                    sorter_params["si_motion"] = si_motion
 
                     # If motion correction was applied, retrieve pre-interpolation recording.
                     # This is done since DartSort makes use of motion without interpolating the traces
@@ -190,10 +187,6 @@ def run() -> None:
                         recording = recording.get_parent()
 
         sorter_params["n_jobs_small"] = N_JOBS - 2
-        sorter_params["matching_threshold"] = MATCHING_THRESHOLD
-        sorter_params["initial_threshold"] = INITIAL_THRESHOLD
-        sorter_params["subsampling_presence"] = SUBSAMPLING_PRESENCE
-        sorter_params["postprocessing"] = POSTPROCESSING
 
         # run sorter
         try:
