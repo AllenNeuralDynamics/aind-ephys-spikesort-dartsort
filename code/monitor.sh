@@ -3,8 +3,8 @@
 # container memory (cgroup v2 or v1), memory/io pressure, run_capsule.py thread states + read bytes, and GPU state.
 INTERVAL=${MONITOR_INTERVAL:-60}
 CG=/sys/fs/cgroup
-V2_STAT="anon|file|file_mapped|active_file|inactive_file|shmem|pgmajfault|workingset_refault_file"
-V1_STAT="total_rss|total_cache|total_mapped_file|total_active_file|total_inactive_file|total_shmem|total_pgmajfault"
+V2_STAT="anon|file|file_mapped|file_dirty|file_writeback|active_file|inactive_file|shmem|pgmajfault|workingset_refault_file"
+V1_STAT="total_rss|total_cache|total_mapped_file|total_dirty|total_writeback|total_active_file|total_inactive_file|total_shmem|total_pgmajfault"
 
 log() { echo "[monitor] $(date -u +%FT%TZ) $*"; }
 
