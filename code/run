@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -ex
 
+# Background resource sampler (debug for CO slowdown investigation); stopped when this script exits.
+bash monitor.sh &
+trap "kill $! 2>/dev/null" EXIT
+
 # This is the master script for the capsule. When you click "Reproducible Run", the code in this file will execute.
 python -u run_capsule.py "$@"
