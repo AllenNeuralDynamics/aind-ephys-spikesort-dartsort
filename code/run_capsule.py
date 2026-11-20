@@ -32,6 +32,28 @@ VERSION = os.getenv("CODE_VERSION", "1.0")
 
 SORTER_NAME = "dartsort"
 
+# DEBUG (CO slowdown investigation): restore pre-0.5.32 template defaults. These are DeveloperConfig-only
+# fields, which the SpikeInterface wrapper (DARTsortUserConfig) can't set, so we wrap dartsort.dartsort.
+DEBUG_DEV_OVERRIDES = dict(template_reduction="median", template_superres=False, template_spikes_per_unit=500)
+
+
+def _patch_dartsort_dev_overrides():
+    import dataclasses
+    import dartsort
+    from dartsort.config import DeveloperConfig
+
+    _orig = dartsort.dartsort
+
+    def _dartsort_with_overrides(recording, output_dir, cfg=None, *args, **kwargs):
+        cfg = DeveloperConfig(**{**dataclasses.asdict(cfg), **DEBUG_DEV_OVERRIDES})
+        print(f"[debug] dartsort DeveloperConfig overrides: {DEBUG_DEV_OVERRIDES}", flush=True)
+        return _orig(recording, output_dir, cfg, *args, **kwargs)
+
+    dartsort.dartsort = _dartsort_with_overrides
+
+
+_patch_dartsort_dev_overrides()
+
 MOTION_CORRECTION_SUPPORTED = True  # set to True if the sorter supports motion correction
 MOTION_CORRECTION_PARAM_NAME = "do_motion_estimation"  # set to the actual parameter name used by the sorter to enable/disable motion correction
 

@@ -14,6 +14,9 @@ else
   log "cgroup v1 limit=$(cat $CG/memory/memory.limit_in_bytes 2>/dev/null) cpu_shares=$(cat $CG/cpu/cpu.shares 2>/dev/null)"
 fi
 log "nproc=$(nproc) host_mem_kb=$(awk '/MemTotal/{print $2}' /proc/meminfo)"
+# task filesystem size/usage, and what backs it (model tells EBS from local NVMe instance store)
+log "disk $(df -B1 --output=source,fstype,size,used,avail,target "$PWD" /tmp 2>/dev/null | tail -n +2 | tr -s ' ' | tr '\n' ';')"
+for d in /sys/block/nvme*; do [ -e "$d" ] && log "blockdev $(basename $d) model=$(cat $d/device/model 2>/dev/null | xargs) size_bytes=$(( $(cat $d/size) * 512 ))"; done
 
 while true; do
   if [ -f $CG/memory.max ]; then
